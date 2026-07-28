@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,7 +10,72 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id    Int    @id @default(autoincrement())
-  email String @unique
+enum Status {
+  SEEN
+  DELIVERED
+  SENT
 }
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  username      String   @unique
+  password      String
+  createdAt     DateTime @default(now())
+  notifications Boolean  @default(false)
+  avatarUrl     String?
+
+  memberships ChatMember[]
+  messages Message[]
+  statuses MessageStatus[]
+}
+
+model Chat {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  members ChatMember[]
+  messages Message[]
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  content   String
+  senderId  Int
+  chatId    Int
+  
+  chat      Chat            @relation(fields: [chatId], references: [id])
+  sender    User            @relation(fields: [senderId], references: [id])
+
+  statuses MessageStatus[]
+}
+
+model MessageStatus {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  status    Status
+  updatedAt DateTime @updatedAt
+
+  message Message @relation(fields: [messageId], references: [id])
+  user User @relation(fields: [userId],  references: [id])
+
+  @@unique([messageId,userId])
+}
+
+model ChatMember {
+  id        Int      @id @default(autoincrement())
+  chatId Int
+  userId    Int
+  joinedAt DateTime @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, chatId])
+}
+
+
