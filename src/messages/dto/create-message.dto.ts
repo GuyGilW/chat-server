@@ -5,5 +5,5 @@ export class CreateMessageDto {
   content: string;
 
   @IsInt()
-  chatID: number;
+  chatId: number;
 }
