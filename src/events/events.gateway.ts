@@ -22,15 +22,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private jwtService: JwtService,
     private messagesService: MessagesService,
   ) {}
-  
+
   private getUserId(client: Socket): number {
     return (client.data as { userId: number }).userId;
   }
 
   private setUserId(client: Socket, userId: number): void {
-  (client.data as { userId: number }).userId = userId;
-}
-
+    (client.data as { userId: number }).userId = userId;
+  }
 
   handleConnection(client: Socket) {
     try {
@@ -55,12 +54,25 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinChat')
-  handleJoinChat(
+  async handleJoinChat(
     @MessageBody() chatId: number,
     @ConnectedSocket() client: Socket,
   ) {
-    client.join(`chat-${chatId}`);
+    await client.join(`chat-${chatId}`);
     const userId = this.getUserId(client);
     console.log(`User ${userId} joined chat-${chatId}`);
+  }
+  @SubscribeMessage('sendMesseage')
+  async handleSendMessage(
+    @MessageBody() data: { chatId: number; content: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userId = this.getUserId(client);
+    const message = await this.messagesService.create(
+      userId,
+      data.chatId,
+      data.content,
+    );
+    this.server.to(`chat-${data.chatId}`).emit('newMessage', message);
   }
 }
