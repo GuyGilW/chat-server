@@ -24,7 +24,7 @@ export class ChatsController {
       req.user.userId,
       dto.name,
       dto.isGroup,
-      dto.memberIDs,
+      dto.memberIds,
     );
   }
 
