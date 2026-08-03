@@ -44,4 +44,40 @@ export class ChatsController {
       Number(newUserId),
     );
   }
+  @Get(':id')
+  findOne(
+    @Req() req: Request & { user: { userId: number } },
+    @Param('id') id: string,
+  ) {
+    return this.chatsService.findOne(Number(id), req.user.userId);
+  }
+
+  @Post(':id/leave')
+  leave(
+    @Req() req: Request & { user: { userId: number } },
+    @Param('id') id: string,
+  ) {
+    return this.chatsService.leaveChat(Number(id), req.user.userId);
+  }
+
+  @Post(':id/members/:userId/remove')
+  removeMember(
+    @Req() req: Request & { user: { userId: number } },
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+  ) {
+    return this.chatsService.removeMember(
+      Number(id),
+      req.user.userId,
+      Number(targetUserId),
+    );
+  }
+
+  @Post(':id/delete')
+  deleteChat(
+    @Req() req: Request & { user: { userId: number } },
+    @Param('id') id: string,
+  ) {
+    return this.chatsService.deleteChat(Number(id), req.user.userId);
+  }
 }
