@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const socket = io('http://localhost:3000', {
+      auth: { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0LCJpYXQiOjE3ODU3NDE4OTEsImV4cCI6MTc4NTgyODI5MX0.0DXlKDgIOx-XBzg9lgEUckzqn2ia1P_-2xKoJIDhBbw' }
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected:', socket.id);
+      socket.emit('joinChat', 2); // your chat id from yesterday
+    });
+
+    socket.on('newMessage', (msg) => {
+      console.log('New message received:', msg);
+    });
+
+    // Send a test message after 2 seconds
+    setTimeout(() => {
+      socket.emit('sendMessage', { chatId: 2, content: 'Real-time hello!' });
+    }, 2000);
+  </script>
+</body>
+</html>
