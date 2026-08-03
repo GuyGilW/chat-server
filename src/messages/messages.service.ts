@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatsService } from '../chats/chats.service';
 
@@ -25,5 +29,23 @@ export class MessagesService {
         sender: { select: { id: true, username: true, avatarUrl: true } },
       },
     });
+  }
+
+  async deleteMessage(messageId: number, userId: number) {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    if (message.senderId !== userId) {
+      throw new ForbiddenException('This is not your message');
+    }
+
+    await this.prisma.message.delete({ where: { id: messageId } });
+
+    return { message: 'Message deleted' };
   }
 }
