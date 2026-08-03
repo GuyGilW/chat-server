@@ -4,8 +4,6 @@ import {
   WebSocketServer,
   SubscribeMessage,
   MessageBody,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
@@ -14,7 +12,7 @@ import { MessagesService } from '../messages/messages.service';
 @WebSocketGateway({
   cors: { origin: '*' },
 })
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class EventsGateway {
   @WebSocketServer()
   server: Server;
 
@@ -33,7 +31,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth?.token as string;
+      const token = client.handshake.auth.token as string;
       const payload = this.jwtService.verify<{ user_id: number }>(token);
       this.setUserId(client, payload.user_id);
       console.log(`Client connected: ${client.id}, user ${payload.user_id}`);
@@ -62,7 +60,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = this.getUserId(client);
     console.log(`User ${userId} joined chat-${chatId}`);
   }
-  @SubscribeMessage('sendMesseage')
+  @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @MessageBody() data: { chatId: number; content: string },
     @ConnectedSocket() client: Socket,
