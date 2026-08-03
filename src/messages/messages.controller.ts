@@ -35,4 +35,15 @@ export class MessagesController {
   ) {
     return this.messagesService.findAllInChat(Number(chatId), req.user.userId);
   }
+
+  @Post(':id/delete')
+  deleteMessage(
+    @Req() req: Request & { user: { userId: number } },
+    @Param() messageId: string,
+  ) {
+    return this.messagesService.deleteMessage(
+      Number(messageId),
+      req.user.userId,
+    );
+  }
 }
