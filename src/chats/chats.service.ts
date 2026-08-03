@@ -46,4 +46,45 @@ export class ChatsService {
     }
     return membership;
   }
+
+  async leaveChat(chatId: number, userId: number) {
+    await this.validateMember(chatId, userId);
+    await this.prisma.chatMember.delete({
+      where: { userId_chatId: { userId, chatId } },
+    });
+    return { message: 'You left the chat' };
+  }
+
+  async removeMember(
+    chatId: number,
+    requesterId: number,
+    targetUserId: number,
+  ) {
+    await this.validateMember(chatId, requesterId);
+
+    await this.validateMember(chatId, targetUserId);
+
+    await this.prisma.chatMember.delete({
+      where: { userId_chatId: { userId: targetUserId, chatId } },
+    });
+
+    return { message: 'Member removed' };
+  }
+
+  async deleteChat(chatId: number, userId: number) {
+    await this.validateMember(chatId, userId);
+
+    await this.prisma.chat.delete({ where: { id: chatId } });
+
+    return { message: 'Chat deleted' };
+  }
+
+  async findOne(chatId: number, userId: number) {
+    await this.validateMember(chatId, userId);
+
+    return this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { members: true },
+    });
+  }
 }
