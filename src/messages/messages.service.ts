@@ -38,6 +38,7 @@ export class MessagesService {
     });
     return message;
   }
+
   async findAllInChat(chatId: number, userId: number) {
     await this.chatService.validateMember(chatId, userId);
     return this.prisma.message.findMany({
@@ -65,5 +66,19 @@ export class MessagesService {
     await this.prisma.message.delete({ where: { id: messageId } });
 
     return { message: 'Message deleted' };
+  }
+
+  async markDelivered(messageId: number, userId: number) {
+    return this.prisma.messageStatus.update({
+      where: { messageId_userId: { messageId, userId } },
+      data: { status: 'DELIVERED' },
+    });
+  }
+
+  async markSeen(messageId: number, userId: number) {
+    return this.prisma.messageStatus.update({
+      where: { messageId_userId: { messageId, userId } },
+      data: { status: 'SEEN' },
+    });
   }
 }
