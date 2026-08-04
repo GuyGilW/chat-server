@@ -73,4 +73,27 @@ export class EventsGateway {
     );
     this.server.to(`chat-${data.chatId}`).emit('newMessage', message);
   }
+
+  @SubscribeMessage('messageDelivered')
+  async handleDelivered(
+    @MessageBody() data: { messageId: number; chatId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userId = this.getUserId(client);
+    const status = await this.messagesService.markDelivered(
+      data.messageId,
+      userId,
+    );
+    this.server.to(`chat-${data.chatId}`).emit('statusUpdate', status);
+  }
+
+  @SubscribeMessage('messageSeen')
+  async handleSeen(
+    @MessageBody() data: { messageId: number; chatId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userId = this.getUserId(client);
+    const status = await this.messagesService.markSeen(data.messageId, userId);
+    this.server.to(`chat-${data.chatId}`).emit('statusUpdate', status);
+  }
 }
