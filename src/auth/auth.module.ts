@@ -13,7 +13,7 @@ import { PassportModule } from '@nestjs/passport';
       secret: process.env.JWT_SECRET,
       signOptions: {
         expiresIn: process.env
-          .JWT_SECRET as `${number}${'d' | 'm' | 'h' | 's'}`,
+          .JWT_EXPIARY_DURATION as `${number}${'d' | 'm' | 'h' | 's'}`,
       },
     }),
     PassportModule,
