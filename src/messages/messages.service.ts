@@ -16,9 +16,27 @@ export class MessagesService {
   async create(senderId: number, chatId: number, content: string) {
     await this.chatService.validateMember(chatId, senderId);
 
-    return this.prisma.message.create({
+    const message = await this.prisma.message.create({
       data: { content, senderId, chatId },
     });
+
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { members: true },
+    });
+
+    const otherMembersIds = chat!.members
+      .map((m) => m.userId)
+      .filter((id) => id !== senderId);
+
+    await this.prisma.messageStatus.createMany({
+      data: otherMembersIds.map((userId) => ({
+        messageId: message.id,
+        userId,
+        status: 'SENT' as const,
+      })),
+    });
+    return message;
   }
   async findAllInChat(chatId: number, userId: number) {
     await this.chatService.validateMember(chatId, userId);
