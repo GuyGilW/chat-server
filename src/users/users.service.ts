@@ -91,4 +91,12 @@ export class UsersService {
       select: { id: true, username: true, avatarUrl: true },
     });
   }
+
+  async updateAvatar(userId: number, avatarUrl: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: { id: true, email: true, username: true, avatarUrl: true },
+    });
+  }
 }
