@@ -9,6 +9,6 @@ export class SignupDTO {
   username: string;
 
   @IsString()
-  @MinLength(3)
+  @MinLength(6)
   password: string;
 }
