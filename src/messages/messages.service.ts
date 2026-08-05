@@ -16,10 +16,29 @@ export class MessagesService {
   async create(senderId: number, chatId: number, content: string) {
     await this.chatService.validateMember(chatId, senderId);
 
-    return this.prisma.message.create({
+    const message = await this.prisma.message.create({
       data: { content, senderId, chatId },
     });
+
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { members: true },
+    });
+
+    const otherMembersIds = chat!.members
+      .map((m) => m.userId)
+      .filter((id) => id !== senderId);
+
+    await this.prisma.messageStatus.createMany({
+      data: otherMembersIds.map((userId) => ({
+        messageId: message.id,
+        userId,
+        status: 'SENT' as const,
+      })),
+    });
+    return message;
   }
+
   async findAllInChat(chatId: number, userId: number) {
     await this.chatService.validateMember(chatId, userId);
     return this.prisma.message.findMany({
@@ -27,6 +46,7 @@ export class MessagesService {
       orderBy: { createdAt: 'asc' },
       include: {
         sender: { select: { id: true, username: true, avatarUrl: true } },
+        statuses: true,
       },
     });
   }
@@ -47,5 +67,19 @@ export class MessagesService {
     await this.prisma.message.delete({ where: { id: messageId } });
 
     return { message: 'Message deleted' };
+  }
+
+  async markDelivered(messageId: number, userId: number) {
+    return this.prisma.messageStatus.update({
+      where: { messageId_userId: { messageId, userId } },
+      data: { status: 'DELIVERED' },
+    });
+  }
+
+  async markSeen(messageId: number, userId: number) {
+    return this.prisma.messageStatus.update({
+      where: { messageId_userId: { messageId, userId } },
+      data: { status: 'SEEN' },
+    });
   }
 }
