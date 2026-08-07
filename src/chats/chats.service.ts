@@ -24,7 +24,13 @@ export class ChatsService {
             create: allMemeberIds.map((userId) => ({ userId })),
           },
         },
-        include: { members: true },
+        include: {
+          members: {
+            select: {
+              user: { select: { id: true, username: true, avatarUrl: true } },
+            },
+          },
+        },
       });
       return chat;
     } catch {
@@ -34,7 +40,13 @@ export class ChatsService {
   async findChatsOfUser(userId: number) {
     return this.prisma.chat.findMany({
       where: { members: { some: { userId } } },
-      include: { members: true },
+      include: {
+        members: {
+          select: {
+            user: { select: { id: true, username: true, avatarUrl: true } },
+          },
+        },
+      },
     });
   }
 
@@ -92,7 +104,13 @@ export class ChatsService {
 
     return this.prisma.chat.findUnique({
       where: { id: chatId },
-      include: { members: true },
+      include: {
+        members: {
+          select: {
+            user: { select: { id: true, username: true, avatarUrl: true } },
+          },
+        },
+      },
     });
   }
 }
