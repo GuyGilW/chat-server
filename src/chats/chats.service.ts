@@ -8,29 +8,51 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class ChatsService {
   constructor(private prisma: PrismaService) {}
+
   async createChat(
     creatorId: number,
     name: string | undefined,
     isGroup: boolean,
     memberIds: number[],
   ) {
-    const allMemeberIds = [...new Set([creatorId, ...memberIds])];
+    const allMemberIds = [...new Set([creatorId, ...memberIds])];
+    const chatInclude = {
+      members: {
+        include: {
+          user: {
+            select: { id: true, username: true, avatarUrl: true },
+          },
+        },
+      },
+    };
+    if (!isGroup && allMemberIds.length === 2) {
+      const [userA, userB] = allMemberIds;
+
+      const existingChat = await this.prisma.chat.findFirst({
+        where: {
+          isGroup: false,
+          AND: [
+            { members: { some: { userId: userA } } },
+            { members: { some: { userId: userB } } },
+          ],
+        },
+        include: chatInclude,
+      });
+
+      if (existingChat) {
+        return existingChat;
+      }
+    }
     try {
       const chat = await this.prisma.chat.create({
         data: {
           name,
           isGroup,
           members: {
-            create: allMemeberIds.map((userId) => ({ userId })),
+            create: allMemberIds.map((userId) => ({ userId })),
           },
         },
-        include: {
-          members: {
-            select: {
-              user: { select: { id: true, username: true, avatarUrl: true } },
-            },
-          },
-        },
+        include: chatInclude,
       });
       return chat;
     } catch {
