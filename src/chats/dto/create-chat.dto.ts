@@ -4,7 +4,6 @@ import {
   IsBoolean,
   IsOptional,
   IsString,
-  IsInt,
 } from 'class-validator';
 
 export class CreateChatDto {
@@ -15,6 +14,6 @@ export class CreateChatDto {
   isGroup: boolean;
   @IsArray()
   @ArrayNotEmpty()
-  @IsInt({ each: true })
-  memberIds: number[];
+  @IsString({ each: true })
+  memberIds: string[];
 }

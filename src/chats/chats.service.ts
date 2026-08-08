@@ -13,9 +13,26 @@ export class ChatsService {
     creatorId: number,
     name: string | undefined,
     isGroup: boolean,
-    memberIds: number[],
+    usernames: string[],
   ) {
-    const allMemberIds = [...new Set([creatorId, ...memberIds])];
+    const targetUsers = await this.prisma.user.findMany({
+      where: { username: { in: usernames } },
+      select: { id: true, username: true },
+    });
+
+    const foundUsernames = new Set(targetUsers.map((user) => user.username));
+    const missingUsernames = usernames.filter(
+      (user) => !foundUsernames.has(user),
+    );
+
+    if (missingUsernames.length > 0) {
+      throw new NotFoundException(
+        `User(s) not found: ${missingUsernames.map((user) => `@${user}`).join(', ')}`,
+      );
+    }
+
+    const targetIds = targetUsers.map((u) => u.id);
+    const allMemberIds = [...new Set([creatorId, ...targetIds])];
     const chatInclude = {
       members: {
         include: {
@@ -25,22 +42,40 @@ export class ChatsService {
         },
       },
     };
-    if (!isGroup && allMemberIds.length === 2) {
-      const [userA, userB] = allMemberIds;
+    if (!isGroup) {
+      if (allMemberIds.length === 1) {
+        const [userId] = allMemberIds;
+        const existingSelfChat = await this.prisma.chat.findFirst({
+          where: {
+            isGroup: false,
+            AND: [
+              { members: { some: { userId } } },
+              { members: { every: { userId } } },
+            ],
+          },
+          include: chatInclude,
+        });
 
-      const existingChat = await this.prisma.chat.findFirst({
-        where: {
-          isGroup: false,
-          AND: [
-            { members: { some: { userId: userA } } },
-            { members: { some: { userId: userB } } },
-          ],
-        },
-        include: chatInclude,
-      });
+        if (existingSelfChat) {
+          return existingSelfChat;
+        }
+      } else if (allMemberIds.length === 2) {
+        const [userA, userB] = allMemberIds;
 
-      if (existingChat) {
-        return existingChat;
+        const existingChat = await this.prisma.chat.findFirst({
+          where: {
+            isGroup: false,
+            AND: [
+              { members: { some: { userId: userA } } },
+              { members: { some: { userId: userB } } },
+            ],
+          },
+          include: chatInclude,
+        });
+
+        if (existingChat) {
+          return existingChat;
+        }
       }
     }
     try {
@@ -59,6 +94,7 @@ export class ChatsService {
       throw new NotFoundException('Id does not exist');
     }
   }
+
   async findChatsOfUser(userId: number) {
     return this.prisma.chat.findMany({
       where: { members: { some: { userId } } },
