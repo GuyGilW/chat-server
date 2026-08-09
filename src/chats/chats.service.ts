@@ -100,7 +100,7 @@ export class ChatsService {
       where: { members: { some: { userId } } },
       include: {
         members: {
-          select: {
+          include: {
             user: { select: { id: true, username: true, avatarUrl: true } },
           },
         },
@@ -164,7 +164,7 @@ export class ChatsService {
       where: { id: chatId },
       include: {
         members: {
-          select: {
+          include: {
             user: { select: { id: true, username: true, avatarUrl: true } },
           },
         },
