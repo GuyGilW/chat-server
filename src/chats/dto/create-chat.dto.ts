@@ -15,5 +15,5 @@ export class CreateChatDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
-  memberIds: string[];
+  usernames: string[];
 }
