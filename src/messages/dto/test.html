@@ -1,25 +1,99 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <title>WebSocket Status Test</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    #log { background: #111; color: #0f0; padding: 10px; height: 400px; overflow-y: auto; white-space: pre-wrap; }
+    input, button { margin: 4px; padding: 6px; }
+  </style>
+</head>
 <body>
+  <h3>WebSocket Status Test</h3>
+
+  <div>
+    <label>Token: <input id="token" size="60" placeholder="paste JWT here"></label>
+    <button onclick="connect()">Connect</button>
+  </div>
+
+  <div>
+    <label>Chat ID: <input id="chatId" size="5" value="2"></label>
+    <button onclick="joinChat()">Join Chat</button>
+  </div>
+
+  <div>
+    <label>Message: <input id="messageContent" size="30" value="hello there"></label>
+    <button onclick="sendMessage()">Send Message</button>
+  </div>
+
+  <div>
+    <label>Message ID: <input id="messageId" size="5"></label>
+    <button onclick="markDelivered()">Mark Delivered</button>
+    <button onclick="markSeen()">Mark Seen</button>
+  </div>
+
+  <div id="log"></div>
+
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
-    const socket = io('http://localhost:3000', {
-      auth: { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0LCJpYXQiOjE3ODU3NDE4OTEsImV4cCI6MTc4NTgyODI5MX0.0DXlKDgIOx-XBzg9lgEUckzqn2ia1P_-2xKoJIDhBbw' }
-    });
+    let socket;
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent += `\n${new Date().toLocaleTimeString()} | ${msg}`;
+      el.scrollTop = el.scrollHeight;
+    };
 
-    socket.on('connect', () => {
-      console.log('Connected:', socket.id);
-      socket.emit('joinChat', 2); // your chat id from yesterday
-    });
+    function connect() {
+      const token = document.getElementById('token').value.trim();
+      if (!token) {
+        log('ERROR: paste a token first');
+        return;
+      }
 
-    socket.on('newMessage', (msg) => {
-      console.log('New message received:', msg);
-    });
+      socket = io('http://localhost:3000', {
+        auth: { token }
+      });
 
-    // Send a test message after 2 seconds
-    setTimeout(() => {
-      socket.emit('sendMessage', { chatId: 2, content: 'Real-time hello!' });
-    }, 2000);
+      socket.on('connect', () => log(`Connected: ${socket.id}`));
+      socket.on('connect_error', (err) => log(`Connection error: ${err.message}`));
+      socket.on('disconnect', () => log('Disconnected'));
+
+      socket.on('newMessage', (msg) => {
+        log(`NEW MESSAGE: ${JSON.stringify(msg)}`);
+        document.getElementById('messageId').value = msg.id;
+      });
+
+      socket.on('statusUpdate', (status) => {
+        log(`STATUS UPDATE: ${JSON.stringify(status)}`);
+      });
+    }
+
+    function joinChat() {
+      const chatId = Number(document.getElementById('chatId').value);
+      socket.emit('joinChat', chatId);
+      log(`Sent joinChat: ${chatId}`);
+    }
+
+    function sendMessage() {
+      const chatId = Number(document.getElementById('chatId').value);
+      const content = document.getElementById('messageContent').value;
+      socket.emit('sendMessage', { chatId, content });
+      log(`Sent sendMessage: ${content}`);
+    }
+
+    function markDelivered() {
+      const chatId = Number(document.getElementById('chatId').value);
+      const messageId = Number(document.getElementById('messageId').value);
+      socket.emit('messageDelivered', { messageId, chatId });
+      log(`Sent messageDelivered: messageId=${messageId}`);
+    }
+
+    function markSeen() {
+      const chatId = Number(document.getElementById('chatId').value);
+      const messageId = Number(document.getElementById('messageId').value);
+      socket.emit('messageSeen', { messageId, chatId });
+      log(`Sent messageSeen: messageId=${messageId}`);
+    }
   </script>
 </body>
 </html>

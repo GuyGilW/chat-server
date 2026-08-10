@@ -39,7 +39,7 @@ export class MessagesController {
   @Post(':id/delete')
   deleteMessage(
     @Req() req: Request & { user: { userId: number } },
-    @Param() messageId: string,
+    @Param('id') messageId: string,
   ) {
     return this.messagesService.deleteMessage(
       Number(messageId),

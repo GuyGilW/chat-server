@@ -50,7 +50,7 @@ export class UsersController {
     return this.usersService.updateEmail(req.user.userId, dto.email);
   }
 
-  @Patch('update-avatar')
+  @Patch('update/avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({

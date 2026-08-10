@@ -31,7 +31,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  whoAMI(@Req() req: Request & { user: { userID: number } }) {
-    return this.usersService.findById(req.user.userID);
+  whoAMI(@Req() req: Request & { user: { userId: number } }) {
+    return this.usersService.findById(req.user.userId);
   }
 }

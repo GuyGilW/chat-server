@@ -25,7 +25,7 @@ export class AuthService {
       throw new ConflictException('This email is already in use');
     const exisingUser = await this.usersService.findByUsername(username);
     if (exisingUser)
-      throw new ConflictException('This email is already in use');
+      throw new ConflictException('This username is already in use');
 
     const hashedPassword = await hash(password, 10);
     const user = await this.usersService.create(

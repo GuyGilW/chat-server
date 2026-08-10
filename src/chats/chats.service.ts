@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -9,24 +13,98 @@ export class ChatsService {
     creatorId: number,
     name: string | undefined,
     isGroup: boolean,
-    memberIds: number[],
+    usernames: string[],
   ) {
-    const allMemeberIds = [...new Set([creatorId, ...memberIds])];
-    return this.prisma.chat.create({
-      data: {
-        name,
-        isGroup,
-        members: {
-          create: allMemeberIds.map((userId) => ({ userId })),
+    const targetUsers = await this.prisma.user.findMany({
+      where: { username: { in: usernames } },
+      select: { id: true, username: true },
+    });
+
+    const foundUsernames = new Set(targetUsers.map((user) => user.username));
+    const missingUsernames = usernames.filter(
+      (user) => !foundUsernames.has(user),
+    );
+
+    if (missingUsernames.length > 0) {
+      throw new NotFoundException(
+        `User(s) not found: ${missingUsernames.map((user) => `@${user}`).join(', ')}`,
+      );
+    }
+
+    const targetIds = targetUsers.map((u) => u.id);
+    const allMemberIds = [...new Set([creatorId, ...targetIds])];
+    const chatInclude = {
+      members: {
+        include: {
+          user: {
+            select: { id: true, username: true, avatarUrl: true },
+          },
         },
       },
-      include: { members: true },
-    });
+    };
+    if (!isGroup) {
+      if (allMemberIds.length === 1) {
+        const [userId] = allMemberIds;
+        const existingSelfChat = await this.prisma.chat.findFirst({
+          where: {
+            isGroup: false,
+            AND: [
+              { members: { some: { userId } } },
+              { members: { every: { userId } } },
+            ],
+          },
+          include: chatInclude,
+        });
+
+        if (existingSelfChat) {
+          return existingSelfChat;
+        }
+      } else if (allMemberIds.length === 2) {
+        const [userA, userB] = allMemberIds;
+
+        const existingChat = await this.prisma.chat.findFirst({
+          where: {
+            isGroup: false,
+            AND: [
+              { members: { some: { userId: userA } } },
+              { members: { some: { userId: userB } } },
+            ],
+          },
+          include: chatInclude,
+        });
+
+        if (existingChat) {
+          return existingChat;
+        }
+      }
+    }
+    try {
+      const chat = await this.prisma.chat.create({
+        data: {
+          name,
+          isGroup,
+          members: {
+            create: allMemberIds.map((userId) => ({ userId })),
+          },
+        },
+        include: chatInclude,
+      });
+      return chat;
+    } catch {
+      throw new NotFoundException('Id does not exist');
+    }
   }
+
   async findChatsOfUser(userId: number) {
     return this.prisma.chat.findMany({
       where: { members: { some: { userId } } },
-      include: { members: true },
+      include: {
+        members: {
+          include: {
+            user: { select: { id: true, username: true, avatarUrl: true } },
+          },
+        },
+      },
     });
   }
 
@@ -84,7 +162,13 @@ export class ChatsService {
 
     return this.prisma.chat.findUnique({
       where: { id: chatId },
-      include: { members: true },
+      include: {
+        members: {
+          include: {
+            user: { select: { id: true, username: true, avatarUrl: true } },
+          },
+        },
+      },
     });
   }
 }
