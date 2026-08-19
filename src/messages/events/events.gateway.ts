@@ -93,7 +93,14 @@ export class EventsGateway {
     @ConnectedSocket() client: Socket,
   ) {
     const userId = this.getUserId(client);
+    if (!userId || !data.messageId || !data.chatId) return;
     const status = await this.messagesService.markSeen(data.messageId, userId);
-    this.server.to(`chat-${data.chatId}`).emit('statusUpdate', status);
+    if (status.updated) {
+      this.server.to(`chat-${data.chatId}`).emit('statusUpdate', {
+        messageId: status.messageId,
+        userId: status.userId,
+        status: status.status,
+      });
+    }
   }
 }
