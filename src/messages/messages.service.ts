@@ -18,6 +18,9 @@ export class MessagesService {
 
     const message = await this.prisma.message.create({
       data: { content, senderId, chatId },
+      include: {
+        sender: { select: { id: true, username: true, avatarUrl: true } },
+      },
     });
 
     const chat = await this.prisma.chat.findUnique({
@@ -36,7 +39,15 @@ export class MessagesService {
         status: 'SENT' as const,
       })),
     });
-    return message;
+    return {
+      ...message,
+      statuses: otherMembersIds.map((userId) => ({
+        id: 0,
+        messageId: message.id,
+        userId,
+        status: 'SENT' as const,
+      })),
+    };
   }
 
   async findAllInChat(chatId: number, userId: number) {
