@@ -29,6 +29,18 @@ export class UsersService {
       select: { id: true, email: true, username: true, avatarUrl: true },
     });
   }
+
+  async findByUsernamePublic(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      select: { id: true, username: true, avatarUrl: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
   async updateUsername(userId: number, newUsername: string) {
     const existing = await this.findByUsername(newUsername);
     if (existing && existing.id !== userId) {
