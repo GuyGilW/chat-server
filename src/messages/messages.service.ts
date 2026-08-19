@@ -88,9 +88,21 @@ export class MessagesService {
   }
 
   async markSeen(messageId: number, userId: number) {
-    return this.prisma.messageStatus.update({
-      where: { messageId_userId: { messageId, userId } },
-      data: { status: 'SEEN' },
+    const result = await this.prisma.messageStatus.updateMany({
+      where: {
+        messageId,
+        userId,
+        status: { not: 'SEEN' },
+      },
+      data: {
+        status: 'SEEN',
+      },
     });
+    return {
+      messageId,
+      userId,
+      status: 'SEEN' as const,
+      updated: result.count > 0,
+    };
   }
 }
